@@ -13,17 +13,38 @@ export interface Species {
   clade: string;
 }
 
-export interface LayoutNode {
+export type SolutionTreeNode =
+  | {
+      id: string;
+      kind: 'species';
+      speciesId: string;
+    }
+  | {
+      id: string;
+      kind: 'internal';
+      children: [SolutionTreeNode, SolutionTreeNode];
+    };
+
+export interface TreeEditorNode {
   id: string;
-  kind: 'branch' | 'slot';
-  children?: LayoutNode[];
-  slotId?: string;
+  kind: 'species' | 'internal';
+  speciesId?: string;
+  childIds: string[];
+  parentId: string | null;
 }
 
-export interface TreeTopologyOption {
+export interface TreeEditorState {
+  nodes: Record<string, TreeEditorNode>;
+  rootIds: string[];
+  nextInternalId: number;
+}
+
+export interface TreeDisplayNode {
   id: string;
-  label: LocalizedText;
-  layout: LayoutNode;
+  kind: 'species' | 'internal';
+  speciesId?: string;
+  children: TreeDisplayNode[];
+  leafCount: number;
 }
 
 export interface QuizTemplate {
@@ -31,21 +52,18 @@ export interface QuizTemplate {
   difficulty: Difficulty;
   prompt: LocalizedText;
   explanation: LocalizedText;
-  layout: LayoutNode;
-  correctPlacements: Record<string, string>;
-  topologyChoices?: TreeTopologyOption[];
-  requiredTopologyChoice?: boolean;
-  correctTopologyId?: string;
+  speciesIds: string[];
+  solutionTree: SolutionTreeNode;
 }
 
 export interface DailyQuiz extends QuizTemplate {
   dayKey: string;
-  speciesIds: string[];
 }
 
 export interface QuizState {
-  placements: Record<string, string | null>;
+  editor: TreeEditorState;
+  history: TreeEditorState[];
+  future: TreeEditorState[];
   revealed: boolean;
   isCorrect: boolean | null;
-  selectedTopologyId: string | null;
 }

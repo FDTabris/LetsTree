@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { buildDailyQuizzes, collectSlotIds, formatDayKey } from './game';
+import {
+  buildDailyQuizzes,
+  createInitialEditorState,
+  evaluateEditorTree,
+  formatDayKey,
+  groupNodes,
+  isEditorComplete,
+} from './game';
 
 describe('daily selection', () => {
   it('creates three quizzes per day', () => {
@@ -8,9 +15,10 @@ describe('daily selection', () => {
     expect(quizzes.map((quiz) => quiz.difficulty)).toEqual(['easy', 'medium', 'hard']);
   });
 
-  it('keeps slot ids available on each layout', () => {
+  it('stores canonical solution trees with species ids for each quiz', () => {
     for (const quiz of buildDailyQuizzes('2026-04-22')) {
-      expect(collectSlotIds(quiz.layout).length).toBeGreaterThanOrEqual(3);
+      expect(quiz.speciesIds.length).toBeGreaterThanOrEqual(3);
+      expect(quiz.solutionTree.kind).toBe('internal');
     }
   });
 
@@ -19,10 +27,14 @@ describe('daily selection', () => {
     expect(dayKey).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  it('requires topology choice for 5-species quizzes', () => {
-    const quizzes = buildDailyQuizzes('2026-04-22');
-    const hardQuiz = quizzes.find((quiz) => quiz.speciesIds.length === 5);
-    expect(hardQuiz?.requiredTopologyChoice).toBe(true);
-    expect(hardQuiz?.topologyChoices).toHaveLength(3);
+  it('evaluates topology independent of grouping order', () => {
+    const quiz = buildDailyQuizzes('2026-04-22')[0];
+    const [a, b, c] = quiz.speciesIds;
+    const firstPairEditor = groupNodes(createInitialEditorState(quiz.speciesIds), a, b);
+    expect(firstPairEditor).not.toBeNull();
+    const completedEditor = groupNodes(firstPairEditor!, firstPairEditor!.rootIds[0], c);
+    expect(completedEditor).not.toBeNull();
+    expect(isEditorComplete(completedEditor!)).toBe(true);
+    expect(evaluateEditorTree(quiz, completedEditor!)).toBe(true);
   });
 });
