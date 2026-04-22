@@ -41,3 +41,4 @@ npm run update-species-images  # refresh species thumbnails from Wikipedia/Wikim
 - Daily sets reset at each player’s local midnight.
 - Species names, explanations, and UI copy are bilingual in English and Simplified Chinese.
 - Species photos are pre-resolved from Wikipedia's API and point at properly sized Wikimedia-hosted thumbnails.
+
