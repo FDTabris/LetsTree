@@ -85,12 +85,27 @@ const describeTree = (tree: TreeDisplayNode, locale: Locale): string => {
   return locale === 'zhHans' ? '已选分组' : 'Selected group';
 };
 
+function useCountdown(): string {
+  const [ms, setMs] = useState(() => msUntilNextLocalMidnight());
+  useEffect(() => {
+    const tick = () => setMs(msUntilNextLocalMidnight());
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
 function App() {
   const [dayKey, setDayKey] = useState(() => formatDayKey());
   const [locale, setLocale] = useState<Locale>(() => loadLocale());
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
   const [quizStates, setQuizStates] = useState<QuizState[]>([]);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+  const countdown = useCountdown();
 
   const quizzes = useMemo(() => buildDailyQuizzes(dayKey), [dayKey]);
   const currentQuiz = quizzes[currentQuizIndex];
@@ -221,11 +236,7 @@ function App() {
         <div>
           <p className="eyebrow">letsTree</p>
           <h1>{locale === 'zhHans' ? '每日进化树挑战' : 'Daily phylogeny challenge'}</h1>
-          <p className="subtle">
-            {locale === 'zhHans'
-              ? '把物种自由分组成一棵有根进化树，每个自然日会在你的本地午夜重置。'
-              : 'Freely group taxa into a rooted tree. The daily set resets at your local midnight.'}
-          </p>
+
         </div>
         <div className="header-actions">
           {(Object.keys(localeLabels) as Locale[]).map((value) => (
@@ -241,19 +252,15 @@ function App() {
         </div>
       </header>
 
-      <section className="status-strip">
-        <span>{locale === 'zhHans' ? '今天的日期' : 'Today'}</span>
-        <strong>{dayKey}</strong>
-        <span>
-          {currentQuizIndex + 1}/{quizzes.length}
-        </span>
-      </section>
-
       {currentQuiz && currentState && currentEditor && currentSolutionTree ? (
         <section className="game-grid">
           <article className="panel quiz-panel">
             <div className="panel-header">
-              <span className={`difficulty difficulty-${currentQuiz.difficulty}`}>{currentQuiz.difficulty}</span>
+              <span className={`difficulty difficulty-${currentQuiz.difficulty}`}>
+                {locale === 'zhHans'
+                  ? { easy: '简单', medium: '中等', hard: '困难' }[currentQuiz.difficulty]
+                  : currentQuiz.difficulty}
+              </span>
             </div>
 
             <div className="tree-canvas">
@@ -369,7 +376,7 @@ function App() {
       {finished && (
         <footer className="completion-banner">
           <strong>{locale === 'zhHans' ? '今日三题全部完成' : 'All 3 daily quizzes are complete'}</strong>
-          <span>{locale === 'zhHans' ? '明天本地午夜会刷新新题目。' : 'A new set will appear at your next local midnight.'}</span>
+          <span>{locale === 'zhHans' ? `距下次刷新：${countdown}` : `Next set in: ${countdown}`}</span>
         </footer>
       )}
     </main>

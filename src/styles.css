@@ -445,8 +445,18 @@ h2 {
   background: #eefaf2;
 }
 
+.progress-item.active.done {
+  background: #2a7a4b;
+  color: white;
+}
+
 .progress-item.missed {
   background: #fff2f2;
+}
+
+.progress-item.active.missed {
+  background: #a03030;
+  color: white;
 }
 
 .result-card {

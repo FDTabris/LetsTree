@@ -215,7 +215,7 @@ function TreeLayoutView({
         if (node.kind === 'species') {
           const species = node.speciesId ? getSpecies(node.speciesId) : null;
           const primary = species ? toLocaleText(species.names, locale) : node.speciesId ?? node.id;
-          const secondary = species ? toLocaleText(species.names, locale === 'en' ? 'zhHans' : 'en') : '';
+          const secondary = '';
 
           return (
             <div
