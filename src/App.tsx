@@ -263,6 +263,14 @@ function App() {
               </span>
             </div>
 
+            {!currentState.revealed && (
+              <p className="instructions-hint">
+                {locale === 'zhHans'
+                  ? '将物种拖到另一个物种上以分组。构建完整的进化树后提交答案。'
+                  : 'Drag a species onto another to group them. Build the full tree, then submit your answer.'}
+              </p>
+            )}
+
             <div className="tree-canvas">
               <button
                 type="button"

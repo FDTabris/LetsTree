@@ -171,6 +171,14 @@ h2 {
   color: #a53737;
 }
 
+.instructions-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #888);
+  text-align: center;
+  font-style: italic;
+}
+
 .tree-canvas {
   position: relative;
   min-height: 360px;
