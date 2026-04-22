@@ -3,8 +3,10 @@ import {
   buildDailyQuizzes,
   buildEditorForest,
   buildInitialQuizStates,
+  buildQuizExplanation,
   buildSolutionDisplayTree,
   cloneEditorState,
+  collectSolutionAncestorSteps,
   createInitialEditorState,
   deserializeState,
   evaluateEditorTree,
@@ -97,6 +99,14 @@ function App() {
   const currentForest = useMemo(() => (currentEditor ? buildEditorForest(currentEditor) : []), [currentEditor]);
   const currentSolutionTree = useMemo(
     () => (currentQuiz ? buildSolutionDisplayTree(currentQuiz.solutionTree) : null),
+    [currentQuiz],
+  );
+  const currentAncestorSteps = useMemo(
+    () => (currentQuiz ? collectSolutionAncestorSteps(currentQuiz.solutionTree) : []),
+    [currentQuiz],
+  );
+  const currentQuizExplanation = useMemo(
+    () => (currentQuiz ? buildQuizExplanation(currentQuiz.solutionTree) : null),
     [currentQuiz],
   );
   const rootTreeMap = useMemo(() => new Map(currentForest.map((tree) => [tree.id, tree])), [currentForest]);
@@ -294,7 +304,24 @@ function App() {
             {currentState.revealed && (
               <div className={`result-card ${currentState.isCorrect ? 'correct' : 'incorrect'}`}>
                 <strong>{currentState.isCorrect ? (locale === 'zhHans' ? '答对了' : 'Correct') : locale === 'zhHans' ? '答案已揭晓' : 'Solution revealed'}</strong>
-                <p>{toLocaleText(currentQuiz.explanation, locale)}</p>
+                {currentQuizExplanation ? <p>{toLocaleText(currentQuizExplanation, locale)}</p> : null}
+                <div className="result-section">
+                  <h3>{locale === 'zhHans' ? '各分组的最晚共同祖先' : 'Latest common ancestors for each grouping'}</h3>
+                  <div className="ancestor-list">
+                    {currentAncestorSteps.map((step) => (
+                      <div key={step.id} className="ancestor-item">
+                        <span>
+                          {step.speciesIds
+                            .map((speciesId) => getSpecies(speciesId))
+                            .filter((species): species is NonNullable<typeof species> => Boolean(species))
+                            .map((species) => toLocaleText(species.names, locale))
+                            .join(locale === 'zhHans' ? '、' : ', ')}
+                        </span>
+                        <strong>{toLocaleText(step.ancestor, locale)}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
                 {currentQuizIndex < quizzes.length - 1 && (
                   <button type="button" className="primary" onClick={goToNextQuiz}>
                     {locale === 'zhHans' ? '下一题' : 'Next quiz'}

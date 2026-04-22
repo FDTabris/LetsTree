@@ -1,7 +1,8 @@
-import { speciesMap, templatesByDifficulty } from './content';
+import { quizThemes, speciesMap, templatesByDifficulty } from './content';
 import {
   DailyQuiz,
   Difficulty,
+  LocalizedText,
   Locale,
   QuizState,
   QuizTemplate,
@@ -11,7 +12,8 @@ import {
   TreeEditorState,
 } from './types';
 
-const contentVersion = 'v2';
+const cycleLength = 50;
+const cycleStartDayKey = '2026-01-01';
 
 export const localStorageKeys = {
   locale: 'letstree.locale',
@@ -31,24 +33,44 @@ export const msUntilNextLocalMidnight = (date = new Date()): number => {
   return next.getTime() - date.getTime();
 };
 
-const hashString = (input: string): number => {
-  let hash = 2166136261;
-  for (let index = 0; index < input.length; index += 1) {
-    hash ^= input.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
+const dailyDifficulties: Difficulty[] = ['easy', 'medium', 'hard'];
+
+const dayKeyToOrdinal = (dayKey: string): number => {
+  const [year, month, day] = dayKey.split('-').map(Number);
+  return Math.floor(Date.UTC(year, month - 1, day) / 86_400_000);
 };
 
-const pickTemplate = (difficulty: Difficulty, dayKey: string): QuizTemplate => {
-  const templates = templatesByDifficulty[difficulty];
-  const index = hashString(`${dayKey}:${difficulty}:${contentVersion}`) % templates.length;
-  return templates[index];
+const getCycleDayIndex = (dayKey: string): number => {
+  const rawIndex = dayKeyToOrdinal(dayKey) - dayKeyToOrdinal(cycleStartDayKey);
+  return ((rawIndex % cycleLength) + cycleLength) % cycleLength;
+};
+
+const templatesByDifficultyAndTheme: Record<Difficulty, Record<QuizTemplate['theme'], QuizTemplate[]>> = Object.fromEntries(
+  dailyDifficulties.map((difficulty) => [
+    difficulty,
+    Object.fromEntries(
+      quizThemes.map((theme) => [
+        theme,
+        templatesByDifficulty[difficulty].filter((template) => template.theme === theme),
+      ]),
+    ),
+  ]),
+) as Record<Difficulty, Record<QuizTemplate['theme'], QuizTemplate[]>>;
+
+const pickDailyTemplates = (dayKey: string): QuizTemplate[] => {
+  const cycleIndex = getCycleDayIndex(dayKey);
+  const roundIndex = Math.floor(cycleIndex / quizThemes.length);
+  const slotIndex = cycleIndex % quizThemes.length;
+
+  return dailyDifficulties.map((difficulty, difficultyIndex) => {
+    const theme = quizThemes[(slotIndex + difficultyIndex) % quizThemes.length];
+    return templatesByDifficultyAndTheme[difficulty][theme][roundIndex];
+  });
 };
 
 export const buildDailyQuizzes = (dayKey: string): DailyQuiz[] =>
-  (['easy', 'medium', 'hard'] as Difficulty[]).map((difficulty) => ({
-    ...pickTemplate(difficulty, dayKey),
+  pickDailyTemplates(dayKey).map((template) => ({
+    ...template,
     dayKey,
   }));
 
@@ -56,6 +78,36 @@ export const toLocaleText = (text: { en: string; zhHans: string }, locale: Local
   text[locale];
 
 export const getSpecies = (id: string) => speciesMap.get(id);
+
+const getNodeLabel = (node: SolutionTreeNode): LocalizedText => {
+  if (node.kind === 'internal') return node.ancestor;
+  const species = getSpecies(node.speciesId);
+  return species?.names ?? { en: node.speciesId, zhHans: node.speciesId };
+};
+
+const collectExplanationSegments = (node: SolutionTreeNode): LocalizedText[] => {
+  if (node.kind === 'species') return [];
+
+  const [leftChild, rightChild] = node.children;
+  const leftLabel = getNodeLabel(leftChild);
+  const rightLabel = getNodeLabel(rightChild);
+
+  return [
+    ...node.children.flatMap(collectExplanationSegments),
+    {
+      en: `${leftLabel.en} and ${rightLabel.en} form ${node.ancestor.en}.`,
+      zhHans: `${leftLabel.zhHans}和${rightLabel.zhHans}组成${node.ancestor.zhHans}。`,
+    },
+  ];
+};
+
+export const buildQuizExplanation = (solutionTree: SolutionTreeNode): LocalizedText => {
+  const segments = collectExplanationSegments(solutionTree);
+  return {
+    en: segments.map((segment) => segment.en).join(' '),
+    zhHans: segments.map((segment) => segment.zhHans).join(''),
+  };
+};
 
 const cloneEditorNode = (node: TreeEditorNode): TreeEditorNode => ({
   ...node,
@@ -85,9 +137,20 @@ export const createInitialEditorState = (speciesIds: string[]): TreeEditorState 
   nextInternalId: 1,
 });
 
+const collectSpeciesIds = (node: SolutionTreeNode): string[] => {
+  if (node.kind === 'species') return [node.speciesId];
+  return node.children.flatMap(collectSpeciesIds);
+};
+
 const serializeSolutionTree = (node: SolutionTreeNode): string => {
   if (node.kind === 'species') return node.speciesId;
   return `(${node.children.map(serializeSolutionTree).sort().join(',')})`;
+};
+
+export type SolutionAncestorStep = {
+  id: string;
+  ancestor: { en: string; zhHans: string };
+  speciesIds: string[];
 };
 
 const serializeEditorTree = (editor: TreeEditorState, nodeId: string): string => {
@@ -195,6 +258,23 @@ export const buildEditorForest = (editor: TreeEditorState): TreeDisplayNode[] =>
 
 export const buildSolutionDisplayTree = (solutionTree: SolutionTreeNode): TreeDisplayNode =>
   buildDisplayNodeFromSolution(solutionTree);
+
+const collectAncestorStepsFromNode = (node: SolutionTreeNode): SolutionAncestorStep[] => {
+  if (node.kind === 'species') return [];
+
+  const speciesIds = collectSpeciesIds(node);
+  return [
+    ...node.children.flatMap(collectAncestorStepsFromNode),
+    {
+      id: node.id,
+      ancestor: node.ancestor,
+      speciesIds,
+    },
+  ];
+};
+
+export const collectSolutionAncestorSteps = (solutionTree: SolutionTreeNode): SolutionAncestorStep[] =>
+  collectAncestorStepsFromNode(solutionTree);
 
 export const evaluateEditorTree = (template: QuizTemplate, editor: TreeEditorState): boolean =>
   isEditorComplete(editor) &&

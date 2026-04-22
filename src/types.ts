@@ -1,16 +1,24 @@
 export type Locale = 'en' | 'zhHans';
 export type Difficulty = 'easy' | 'medium' | 'hard';
+export type QuizTheme = 'apes' | 'mammals' | 'vertebrates' | 'plants' | 'fungi';
 
 export interface LocalizedText {
   en: string;
   zhHans: string;
 }
 
+export interface TaxonStep {
+  key: string;
+  rank: string;
+  label: LocalizedText;
+}
+
 export interface Species {
   id: string;
   names: LocalizedText;
+  scientificName: string;
   photoUrl: string;
-  clade: string;
+  lineage: TaxonStep[];
 }
 
 export type SolutionTreeNode =
@@ -22,6 +30,7 @@ export type SolutionTreeNode =
   | {
       id: string;
       kind: 'internal';
+      ancestor: LocalizedText;
       children: [SolutionTreeNode, SolutionTreeNode];
     };
 
@@ -50,8 +59,8 @@ export interface TreeDisplayNode {
 export interface QuizTemplate {
   id: string;
   difficulty: Difficulty;
+  theme: QuizTheme;
   prompt: LocalizedText;
-  explanation: LocalizedText;
   speciesIds: string[];
   solutionTree: SolutionTreeNode;
 }

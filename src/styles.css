@@ -455,6 +455,28 @@ h2 {
   border-radius: 18px;
 }
 
+.result-section {
+  margin-top: 16px;
+}
+
+.result-section h3 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+}
+
+.ancestor-list {
+  display: grid;
+  gap: 8px;
+}
+
+.ancestor-item {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
 .result-card.correct {
   background: #eefaf2;
 }
