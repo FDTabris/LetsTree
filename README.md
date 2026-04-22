@@ -33,11 +33,11 @@ npm run dev      # start the dev server
 npm run build    # create a production build
 npm run preview  # preview the production build
 npm test         # run the test suite
+npm run update-species-images  # refresh species thumbnails from Wikipedia/Wikimedia
 ```
 
 ## Content notes
 
 - Daily sets reset at each player’s local midnight.
 - Species names, explanations, and UI copy are bilingual in English and Simplified Chinese.
-- Quiz photos use externally hosted image URLs from permissive or public-domain sources.
-
+- Species photos are pre-resolved from Wikipedia's API and point at properly sized Wikimedia-hosted thumbnails.

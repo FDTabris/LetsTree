@@ -176,6 +176,37 @@ const layoutTree = (tree: TreeDisplayNode): TreeLayout => {
   };
 };
 
+function SpeciesPhoto({
+  photoUrl,
+  alt,
+  fallbackLabel,
+}: {
+  photoUrl: string;
+  alt: string;
+  fallbackLabel: string;
+}) {
+  const [hasError, setHasError] = useState(photoUrl.length === 0);
+
+  if (hasError) {
+    return (
+      <div className="tree-species-photo tree-species-photo-fallback" aria-hidden="true">
+        {fallbackLabel}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={photoUrl}
+      alt={alt}
+      className="tree-species-photo"
+      loading="lazy"
+      draggable={false}
+      onError={() => setHasError(true)}
+    />
+  );
+}
+
 function TreeLayoutView({
   tree,
   locale,
@@ -229,13 +260,7 @@ function TreeLayoutView({
             >
               <div className="tree-species">
                 {species ? (
-                  <img
-                    src={species.photoUrl}
-                    alt={primary}
-                    className="tree-species-photo"
-                    loading="lazy"
-                    draggable={false}
-                  />
+                  <SpeciesPhoto photoUrl={species.photoUrl} alt={primary} fallbackLabel={primary.slice(0, 1)} />
                 ) : null}
                 <span className="tree-species-primary">{primary}</span>
                 {secondary ? <span className="tree-species-secondary">{secondary}</span> : null}

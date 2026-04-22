@@ -308,6 +308,15 @@ h2 {
   -webkit-user-drag: none;
 }
 
+.tree-species-photo-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #dfeaf7 0%, #e8f2eb 100%);
+  color: #35506c;
+  font-weight: 700;
+}
+
 .tree-species-primary {
   font-weight: 700;
   font-size: 0.84rem;

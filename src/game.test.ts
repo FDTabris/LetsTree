@@ -39,6 +39,11 @@ describe('daily selection', () => {
     expect(speciesCatalog.length).toBeGreaterThanOrEqual(60);
   });
 
+  it('ships wikipedia-backed thumbnails for the species catalog', () => {
+    expect(speciesCatalog.every((species) => species.photoUrl.startsWith('https://upload.wikimedia.org/'))).toBe(true);
+    expect(speciesCatalog.some((species) => species.photoUrl.includes('loremflickr'))).toBe(false);
+  });
+
   it('formats local dates as yyyy-mm-dd', () => {
     const dayKey = formatDayKey(new Date('2026-04-22T12:00:00Z'));
     expect(dayKey).toMatch(/^\d{4}-\d{2}-\d{2}$/);
@@ -136,5 +141,10 @@ describe('daily selection', () => {
     expect(gorilla?.lineage.map((step) => step.key)).not.toContain('pan-clade');
     expect(orangutan?.lineage.map((step) => step.key)).toEqual(expect.arrayContaining(['apes', 'great-apes']));
     expect(orangutan?.lineage.map((step) => step.key)).not.toContain('african-great-apes');
+  });
+
+  it('stores corrected scientific names for catalog lookups', () => {
+    const beech = speciesCatalog.find((species) => species.id === 'beech');
+    expect(beech?.scientificName).toBe('Fagus sylvatica');
   });
 });
